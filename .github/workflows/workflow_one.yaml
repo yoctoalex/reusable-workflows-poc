@@ -50,7 +50,8 @@ jobs:
         with: 
           vars_json: "${{ toJSON(vars) }}" 
           vars_prefix: "TF_VAR_"
-          inputs_json: "${{ toJSON(inputs) }}" 
+          inputs_json: "${{ toJSON(inputs) }}"
+          file_path: "./terraform/demo.env"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
