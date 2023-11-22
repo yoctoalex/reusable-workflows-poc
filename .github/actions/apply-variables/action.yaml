@@ -20,7 +20,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Apply Repository Variables
+    - name: Apply Repository Variables with Custom Prefix
       if: ${{ inputs.vars_json != '' }}
       id: apply_action_vars
       env:
@@ -28,8 +28,49 @@ runs:
         VARS_PREFIX: ${{ inputs.vars_prefix }}
       shell: bash
       run: |
-        echo "$VARS_JSON" | jq -r 'to_entries | .[] | select(.key | startswith(env.VARS_PREFIX)) | "TF_VAR_\(.key | ltrimstr(env.VARS_PREFIX) | ascii_downcase)=\(.value)"' >> "$GITHUB_ENV"
-        echo "$VARS_JSON" | jq -r 'to_entries | .[] | select(.key | startswith("TF_CLOUD_WORKSPACE_")) | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
+        echo "$VARS_JSON" |
+        jq -r '
+            # Convert the JSON object into an array of key-value pairs
+            to_entries |
+
+            # Iterate over each key-value pair
+            .[] |
+
+            # Select pairs where the key starts with the value of env.VARS_PREFIX
+            select(.key | startswith(env.VARS_PREFIX)) |
+
+            # Further select pairs where the value is not empty
+            select(.value | length > 0) |
+
+            # Format the output: strip VARS_PREFIX from the key, convert to lowercase,
+            # prepend with TF_VAR_, and set it equal to the value
+            "TF_VAR_\(.key | ltrimstr(env.VARS_PREFIX) | ascii_downcase)=\(.value)"
+        ' >> "$GITHUB_ENV"
+
+    - name: Apply Repository Variables required for Terraform Cloud
+      if: ${{ inputs.vars_json != '' }}
+      id: apply_action_tf_cloud_vars
+      env:
+        VARS_JSON: ${{ inputs.vars_json }}
+      shell: bash
+      run: |
+        echo "$VARS_JSON" |
+        jq -r '
+            # Convert the JSON object into an array of key-value pairs
+            to_entries |
+
+            # Iterate over each key-value pair
+            .[] |
+
+            # Select pairs where the key starts with the value of "TF_CLOUD_WORKSPACE_"
+            select(.key | startswith("TF_CLOUD_WORKSPACE_")) |
+
+            # Further select pairs where the value is not empty
+            select(.value | length > 0) |
+
+            # Format the output
+            "\(.key)=\(.value)"
+        ' >> "$GITHUB_ENV"
 
     - name: Apply File Variables
       id: apply_file_vars
@@ -51,5 +92,20 @@ runs:
         INPUTS_JSON: ${{ inputs.inputs_json }}
       shell: bash
       run: |
-        echo "$INPUTS_JSON" | jq -r 'to_entries | .[] | select(.key) | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
+        echo "$INPUTS_JSON" |
+        jq -r '
+            # Convert the JSON object into an array of key-value pairs
+            to_entries |
 
+            # Iterate over each key-value pair
+            .[] |
+
+            # Select pairs where the key starts with the value of "TF_CLOUD_WORKSPACE_"
+            select(.key) |
+
+            # Further select pairs where the value is not empty
+            select(.value | length > 0) |
+
+            # Format the output
+            "\(.key)=\(.value)"
+        ' >> "$GITHUB_ENV"
