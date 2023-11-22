@@ -1,0 +1,71 @@
+name: "Workflow One"
+
+on:
+  workflow_dispatch:
+    inputs:
+      TF_VAR_custom_one:
+        description: "Custom input variable"
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      TF_VAR_custom_one:
+        description: "Custom input variable"
+        required: false
+        type: string
+    secrets:
+      GITHUB_SECRET_VARIABLE:
+        required: true
+    outputs:
+      workflow_result_one:
+        description: "Workflow result one"
+        value: ${{ jobs.job_one.outputs.workflow_result_one }}
+      workflow_result_two:
+        description: "Workflow result two"
+        value: ${{ jobs.job_one.outputs.workflow_result_two }}
+      workflow_result_three:
+        description: "Workflow result three"
+        value: ${{ jobs.job_one.outputs.workflow_result_three }}
+
+env:
+  TF_VAR_custom_one: "one"
+  TF_VAR_custom_two: "two"
+  TF_VAR_custom_three: "three"
+
+jobs:
+  job_one:
+    name: "Test job 1"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "./terraform"
+    outputs:
+      workflow_result: ${{ steps.vars.outputs.aws_credentials_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: apply_variables 
+        uses: "./.github/actions/apply-variables" 
+        with: 
+          vars_json: "${{ toJSON(vars) }}" 
+          vars_prefix: "TF_VAR_"
+          inputs_json: "${{ toJSON(inputs) }}" 
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Apply'
+        run: terraform apply -auto-approve -input=false
+
+      - name: Set output vars
+        id: output_vars
+        run: |
+          printf "workflow_result_one=%s\n" $(terraform-bin output -raw result_one) >> "$GITHUB_OUTPUT"
+          printf "workflow_result_two=%s\n" $(terraform-bin output -raw result_two) >> "$GITHUB_OUTPUT"
+          printf "workflow_result_three=%s\n" $(terraform-bin output -raw result_three) >> "$GITHUB_OUTPUT"

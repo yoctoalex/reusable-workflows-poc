@@ -1,0 +1,42 @@
+name: 'Apply Input Parameters'
+description: 'Parse input parameters and assign to environment variables'
+inputs:
+  vars_json:
+    description: 'List of the repository variables'
+    required: false
+    default: ''
+  vars_prefix:
+    description: 'Prefix for vars'
+    required: false
+    default: ''
+  inputs_json:
+    description: 'List of the input variables'
+    required: false
+    default: ''
+runs:
+  using: "composite"
+  steps:
+    - name: Apply Repository Variables
+      if: ${{ inputs.vars_json != '' }}
+      id: apply_action_vars
+      env:
+        VARS_JSON: ${{ inputs.vars_json }}
+        VARS_PREFIX: ${{ inputs.vars_prefix }}
+      shell: bash
+      run: |
+        echo "$VARS_JSON" | jq -r 'to_entries | .[] | select(.key | startswith(env.VARS_PREFIX)) | "TF_VAR_\(.key | ltrimstr(env.VARS_PREFIX) | ascii_downcase)=\(.value)"' >> "$GITHUB_ENV"
+        echo "$VARS_JSON" | jq -r 'to_entries | .[] | select(.key | startswith("TF_CLOUD_WORKSPACE_")) | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
+
+    # TODO: Add file source support
+    # - name: Apply File Variables
+    #   id: apply_file_vars
+
+    - name: Apply Input Variables
+      if: ${{ inputs.inputs_json != '' }}
+      id: apply_input_vars
+      env:
+        INPUTS_JSON: ${{ inputs.inputs_json }}
+      shell: bash
+      run: |
+        echo "$INPUTS_JSON" | jq -r 'to_entries | .[] | select(.key) | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
+
