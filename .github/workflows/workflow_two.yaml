@@ -1,0 +1,23 @@
+name: "Workflow Two"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  job_one: 
+    uses: ./.github/workflows/workflow_one.yaml 
+    with: 
+      TF_VAR_custom_one: "custom_workflow_two"
+
+  job_two:
+    name: "Test job 2"
+    needs: job_one
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "."
+    steps:
+      - name: Print output
+        id: print_output
+        run: |
+          echo "The output is ${{ needs.job_one.outputs.workflow_result_one }}"

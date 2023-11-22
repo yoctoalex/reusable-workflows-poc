@@ -13,9 +13,6 @@ on:
         description: "Custom input variable"
         required: false
         type: string
-    secrets:
-      GITHUB_SECRET_VARIABLE:
-        required: true
     outputs:
       workflow_result_one:
         description: "Workflow result one"
@@ -40,7 +37,9 @@ jobs:
       run:
         working-directory: "./terraform"
     outputs:
-      workflow_result: ${{ steps.vars.outputs.aws_credentials_name }}
+      workflow_result_one: ${{ steps.output_vars.outputs.workflow_result_one }}
+      workflow_result_two: ${{ steps.output_vars.outputs.workflow_result_two }}
+      workflow_result_three: ${{ steps.output_vars.outputs.workflow_result_three }}
 
     steps:
       - name: Checkout
