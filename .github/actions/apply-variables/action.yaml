@@ -21,7 +21,7 @@ runs:
   using: "composite"
   steps:
     - name: Apply Repository Variables with Custom Prefix
-      if: ${{ inputs.vars_json && inputs.vars_json != '' }}
+      if: ${{ inputs.vars_json != null && inputs.vars_json != '' }}
       id: apply_action_vars
       env:
         VARS_JSON: ${{ inputs.vars_json }}
@@ -48,7 +48,7 @@ runs:
         ' >> "$GITHUB_ENV"
 
     - name: Apply Repository Variables required for Terraform Cloud
-      if: ${{ inputs.vars_json && inputs.vars_json != '' }}
+      if: ${{ inputs.vars_json != null && inputs.vars_json != '' }}
       id: apply_action_tf_cloud_vars
       env:
         VARS_JSON: ${{ inputs.vars_json }}
